@@ -1,0 +1,53 @@
+Go to Amazon Bedrock Console - Agents - Create Agent - Provide a name for the agent
+
+Create or use a new role
+
+Select model -> I chose Anthropic, Claude 3 Sonnet
+
+Provide instructions for Agent:
+
+You are a retail banking agent assisting customers with the the status of their accounts and related info. You are kind and polite.
+
+You can make additional config changes like enabling User Input (ask for more info if given info is not enough), customize key used for encryption, adjust the idle session timeout etc.
+
+You can Save & Exit at this point and run some queries. You have to "Prepare" the agent before agent can start answering.
+
+At this point, the agent cannot answer specific questions related to your account info stored in DynamoDB but could probably answer some generic questions like Who are you.
+
+
+========================
+
+Now, to answer more specific questions, you need to hook up your Bedrock agent with a lambda function that interacts with the DynamoDB table holding account info.
+
+For this, you need to create an "Action group":
+Do not try to add action group before Saving and Preparing the agent first, as described above. You will not be able to Create the agent, error will be thrown when Creating.
+
+Provide a name for the action group
+
+Action group type will be: Define with API schemas (Specify a Lambda or API Gateway and define a schema to specify the APIs that the agent can invoke to carry out its tasks)
+
+Action group invocation - Specify the lambda function - bedrockCustomerAccountStatus - that interacts with DynamoDB. Refer the "1. My Code" folder.
+
+Note that, in the Configuration - Permissions section of the lambda, under "Resource-based policy statements", we need to provide details of the bedrock agent like the ARN to enable Bedrock to invoke the lambda function. Remember to increase the timeout as well. Note that the input has to be read in a certain way and the output has to be in a certain way for lambda to work with bedrock agent.
+
+Action group schema - Specify the S3 URI of customerAccountStatus.yaml. 
+Instead of API that we have used previously to work with lambda, here we are using the OpenAPI format which has the parameters to pass to lambda and the return text structure.
+Refer the "1. My Code" folder.
+Note that this is related to "Action group type" -> Define with API schemas, mentioned above.
+Not sure of the exact purpose of this because even when i changed the param name or output field names or other sections of the yaml, the lambda seemed to get triggered fine and got the result of the query in the Bedrock agent window. However, you cannot avoid this - you will not be able to save the action group without providing one of "Define with API schemas" or "Define with function details".
+
+Now, try specific questions like what is the status of 5555 ? staus 6666, tel me abt 777 etc.
+Note that spelling mistakes, random wordings are fine - if the account is present in dynamodb, you will get the status info.
+Even when you say, tel me abt 6666, the "event" in lambda will be:
+The event is:  {'parameters': [{'name': 'Account', 'type': 'int', 'value': '6666'}], 'sessionId': '100163808729939', 'agent': {'name': 'customer-account-status-verifier-agent', 'version': 'DRAFT', 'id': 'T7SSZMLYBM', 'alias': 'TSTALIASID'}, 'messageVersion': '1.0', 'sessionAttributes': {}, 'promptSessionAttributes': {}, 'inputText': 'tel me about 6666', 'apiPath': '/customerAccountStatus', 'actionGroup': 'customer-account-status-verifier-action-group', 'httpMethod': 'GET'}
+So, event['parameters'][0]['value'] will get the account number which is then used to query dynamodb.
+
+=============================
+
+Now we can add a Bedrock KnowledgeBase to the Agent. In this use case, we will use the Knowledge Base to provide more details on the account status description. You will get much more detailed answers to your question after you have added this.
+
+Upload the document "C:\Vinod\AWSDataEngineering\19. AWS Certified AI Practitioner\5. Amazon Bedrock Agent - RetailBank Agent\0. Course Material\Description of the various ErrorCodes in New Account Opening.pdf" in an S3 bucket.
+
+Create a Bedrock Knowledge Base - specify the source S3 path, chunking strategy, embeddings model, vector store. Sync the data store and test the Knowledge base.
+
+Go to Bedrock Agent, Edit in Agent Builder, add above Knowledge base. Save & exit, Prepare. Then, test again with questions like "6666 status quick pls". You will see that, now more details are provided, explaining the reason for the error, than without knowledge base.

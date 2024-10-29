@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+   title: Retail Bank Agent yaml - schema that defines the API that the agent invokes to carry out its tasks. # give meaningful title
+   version: 0.0.1
+   description: Get the status of customer accounts # as per course, this is very important for the correct lambda to be invoked but that was not the case for me
+paths:
+   "/customerAccountStatus": # this need not be the lambda function name
+     get:
+       summary: Get a list of all open new accounts and thier status
+       description: Get a list of all open new accounts and thier status
+       operationId: getAllOpenAccountStatus
+       parameters:
+       - name : Account
+         in: path
+         description: The account ID of the customer looking for status
+         required: true
+         schema:
+           type: int
+       responses:
+        '200':
+          description: Successful response containing the account status details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AccountName:
+                    type: string
+                    description: The name of the customer corresponding to AccountID
+                  AccountID:
+                    type: int
+                    description: The account id of the customer  
+                  Reason:
+                    type: string
+                    description: The reason for open status
+                  AccountStatus:
+                    type: string
+                    description: The status of the accountid provided
+   

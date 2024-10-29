@@ -1,0 +1,2 @@
+Create a DynamoDB table customerAccountStatus with AccountID as the Partition Key with few sample records.
+This table has a few account id's and the account name, status etc.
